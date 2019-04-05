@@ -1,0 +1,82 @@
+---
+title: "Math 150 - Methods in Biostatistics - Project 1"
+author: "Barah Makhdum"
+date: 'Due: Monday, April 8, 2019, in class'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r warnings=FALSE, message = FALSE}
+library(tidyverse)
+library(broom)
+library(dplyr)
+
+AIDSdata <- read_csv("AIDSdata.csv")
+dim(AIDSdata)
+```
+
+we have Sample size N is equal 851 and 16 varaibles
+
+The Time by day and the range between one to 362 days.
+The median of time is 257 days and the mean is equal 231.8 
+
+```{r}
+summary(AIDSdata$time)
+```
+
+
+The variable censor is a nominal variable (categorical variable).
+There are 782 people who said (1) for AIDS defining diagnosis or death and and 69 who choose (0) for Otherwise
+
+The tx is a categorical variable define as a two groups. First  for 422 people who take the treatment includes IDV and the second 429 for who follow treatment regimen without IDV.
+
+ 
+```{r}
+hist(AIDSdata$txgrp, col="blue", xlab="Event indicator for AIDS defining", main=" Histogram",ylim =c(0,500), labels = TRUE)
+
+```
+From the Histogram we can describe the variable txgrp
+we have 4 treatment groups.However, there are only two treatment groups used in this study. which are  (ZDV + 3TC) and (ZDV + 3TC + IDV).
+
+The strat2 is a  CD4 stratum at screening and it was divided into two groups.
+zero was for whom had CD4 less than or equal to 50 and one gaven to whom had grater than 50 at CD4 screening 
+
+```{r}
+matrix(c("CD4<=50",sum(AIDSdata$strat2==0),"CD4>50",sum(AIDSdata$strat2==1)),ncol=2,byrow=TRUE)
+```
+
+```{r}
+a<-sum(AIDSdata$sex==1)
+b<-sum(AIDSdata$sex==2)
+slices<-c(a,b)
+labs<-c("Male","Female")
+pct<-round(slices/sum(slices)*100)
+lbls<-paste(labs,pct)
+lbls<-paste(lbls,"%",sep="")
+pie(slices,lbls,col=rainbow(length(lbls)))
+```
+From the graph above, we have 84% Male in the study and 16%  Female.
+```{r}
+a<-sum(AIDSdata$raceth==1)
+b<-sum(AIDSdata$raceth==2)
+c<-sum(AIDSdata$raceth==3)
+d<-sum(AIDSdata$raceth==4)
+slices<-c(a,b,c,d)
+labs<-c("White Non-Hispanic","Black Non-Hispanic","Hispanic (regardless of race)","Asian, Pacific Islander","American Indian, Alaskan Native","Other/unknown")
+pct<-round(slices/sum(slices)*100)
+lbls<-paste(labs,pct)
+lbls<-paste(lbls,"%",sep="")
+pie(slices,lbls,col=rainbow(length(lbls)))
+```
+This graph show the results of the study in which Race they are. White (Non-Hispanic) is highest percentage. Hispanic and Black percentage are close to each other.  However, Asian, took the lowest percentage.
+
+ivdrug was the question about the IV drug use history and the choices were (never, currently and previously).
+
+```{r}
+counts <- table(AIDSdata$hemophil)
+barplot(counts, xlim=c(0,2), ylim = c(0,850),main="Hemophiliac")
+```
+
+Summarise the information in the graph by showing the number of said No they do not have Hemophiliac greater than to whom said yes they have it.
