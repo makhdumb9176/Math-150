@@ -1,0 +1,150 @@
+
+---
+title: "Math 150 - Methods in Biostatistics - project Part#2"
+author: "Barah Makhdum"
+date: 'Due: Friday, April 19, 2019, in class'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(survival)
+library(FDRsampsize)
+library(powerSurvEpi)
+
+```
+
+
+##Power Analysis
+
+(1) What is Power Analysis?
+While conducting tests of hypotheses, the power analysis is how often do commit reject the null hypothesis when shouldn't.
+
+|                      |Truth: T |Truth: F |
+|----------------------|---------|---------|
+|Null hypothesis       |$\alpha$ |$1-\alpha$|           
+|Alternative hypothesis|$1-\beta$|$\beta$  |
+
+The power analysis is: $1-\beta$
+
+
+## 75% power means you have an 75% chance of getting a significant result when the effect is real.
+
+
+(2) How to Calculate the power?
+To calculare the power there is a common formula we can used it.
+
+$\beta=\Phi((\frac{|\mu_t-\mu_c|\sqrt{N}}{2\sigma})-\Phi^{-1}(1-\frac{\alpha}{2})$
+
+$\beta$ is our measure of power. $0<\beta<1$
+
+$\Phi$ is the CDF of the normal distribution, $\Phi^{-1}$ is the inverse.
+
+$\mu_t$is the avarage outcome in the treatment group. Suppose it's 65
+
+$\mu_c$ is the avarge outcome in the control group. Suppose it's 60
+
+$\sigma$ is the standard deviation of outcomes.
+
+$\alpha$ is our significance level
+
+
+## The assumption of power analysis is, involves random sampling.  This means that the sample on which power analysis is being conducted is drawn by the process of random sampling.
+
+
+
+(3) What are ingredients of Statistical Power?
+There are three ingredients of that.
+
+First,strength of the treatment. There is positive relationship between the power and strength of the treatment. That mean, when the strength of your treatment increases, the power of your experiment increases.
+
+Second, background noise. There is opposite relationship between the power and background noise. That mean, when the background noise of your outcome variables increases, the power of your experiment decreases.
+
+Third, experimental Design. Traditional power analysis focuses on one element of experimental design: the number of subjects in each experimental group.
+
+
+(4) Power analysis for survival analysis
+In survival analysis, the power is directly related to the number of events observed in the study. The required sample size is therefore determined by the observed number of events. Survival data are commonly analyzed using the log-rank test or the Cox proportional hazards model. 
+
+
+#Null Hypothesis to be Tested
+
+$H_0:HR=1$
+
+where $HR=\frac{h_0(t)}{h_1(t)}$  for all t
+assuming proportional hazards
+
+#Test Statistic
+
+HR estimated from Cox model
+
+#Effect Size
+
+HR = 1 implies no difference between treatments
+
+HR > 1 implies “survival” is longer on treatment 2
+
+HR < 1 implies “survival” is longer on treatment 1
+
+#Significance Level
+
+$\alpha=0.05$ , $z_\frac{\alpha}{2}=1.96$
+
+#Power
+
+Typically desire power of at least 80%,90% or 95%. Recall that for means and proportions, power is a function of sample size.However, for survival data, power is entirely driven by number of events
+
+| Power | $\beta$ | $z_\beta$ |
+|-------|---------|-----------|
+|  80%  |  0.20   |   0.842   |
+|  90%  |  0.10   |   1.282   |
+|  95%  |  0.05   |   1.645   |
+
+
+#Required Number of Events
+$events=\frac{(z_\frac{\alpha}{2}+z_\beta)^2}{\pi_1\pi_2(logHR)^2}$
+
+where $z_\frac{\alpha}{2}$ and $z_\beta$ are dtandard normal percentiles, $\pi_1 and \pi_2$ are the proportion to be allocated to grpups 1 and 2
+
+(for equal allocation $\pi_1$ and $\pi_2$=1/2)
+
+#Probability of an Event
+p{event}=$1-(\pi_1s_1(T)+\pi_2s_2(T)$
+
+
+We will look for the best model by adding all explanatory variables and see which variables are significant
+```{r}
+coxph(Surv(tx,censor==1)~cd4 +time+time_d+txgrp+strat2+sex+raceth+ivdrug+hemophil+karnof+priorzdv+age,data=AIDSdata)
+
+```
+since the variables (sex, raceth, ivdrug and priorzdv) have p-value > 0.05 -> that mean these variables are not significant.
+
+```{r}
+coxph(Surv(cd4,censor==1)~tx +time+time_d+strat2+hemophil+karnof+age,data=AIDSdata)
+```
+Also, we can see the variable (karnof) has p-value > 0.05 -> that mean these variables are not significant.
+
+```{r}
+coxph(Surv(cd4,censor==1)~tx +time+time_d+strat2+hemophil+age,data=AIDSdata)
+```
+
+
+```{r}
+install.packages("power.cox")
+install.packages("powerEpi")
+```
+
+
+
+
+
+
+
+
+
+
+References:
+http://egap.org/methods-guides/10-things-you-need-know-about-statistical-power
+Yulia Marchenko, 2007. "Power analysis and sample-size determination in survival models with the new stpower command
+

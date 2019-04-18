@@ -34,7 +34,7 @@ The tx is a categorical variable define as a two groups. First  for 422 people w
 
  
 ```{r}
-hist(AIDSdata$txgrp, col="blue", xlab="Event indicator for AIDS defining", main=" Histogram",ylim =c(0,500), labels = TRUE)
+hist(AIDSdata$txgrp, col="blue", xlab="Treatment Grpup", main=" Histogram",ylim =c(0,500), labels = TRUE)
 
 ```
 From the Histogram we can describe the variable txgrp
