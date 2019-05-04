@@ -12,8 +12,11 @@ output:
 library(readr)
 AIDSdata <- read_csv("~/Math-150/AIDSdata.csv")
 library(survival)
+library(simsurv)
+library(survminer)
 library(FDRsampsize)
 library(powerSurvEpi)
+library(coxed)
 
 ```
 
@@ -22,14 +25,22 @@ library(powerSurvEpi)
 
 (1) \textcolor{blue}{What is Power Analysis?}
 
-While conducting tests of hypotheses, the power analysis is how often do commit reject the null hypothesis when shouldn't.
+The power of any test of statistical significance is defined as the probability that it will reject a false null hypothesis.
 
-|                      |Truth: T |Truth: F |
-|----------------------|---------|---------|
-|Null hypothesis       |$\alpha$ |$1-\alpha$|           
-|Alternative hypothesis|$1-\beta$|$\beta$  |
+|               |Do not reject $H_0$ |Reject $H_0$ |
+|---------------|---------|---------|
+|$H_0$ is true  |Correct Decision | Incorrect Decision |
+|               |                 |Type I error $(\alpha)$|   
+|$H_0$ is false |Incorrect Decision |Correct Decision  |
+|               |Type II error $(\beta)$|     |
 
-The power analysis is: $1-\beta$
+\textcolor{blue}{$\alpha$ is the Probability when we reject $H_0$ when is true}
+
+
+\textcolor{blue}{$\beta$ is the probability when we do not reject $H_0$ when is false}
+
+
+power is inversely related to beta or the probability of making a Type II error: $1-\beta$
 
 
 ## 75% power means you have an 75% chance of getting a significant result when the effect is real.
@@ -41,22 +52,29 @@ $~$
 To calculare the power there is a common formula we can used it.
 
 
-\textcolor{red}{$$\beta=\Phi((\frac{|\mu_t-\mu_c|\sqrt{N}}{2\sigma})-\Phi^{-1}(1-\frac{\alpha}{2}) $$}
+\textcolor{red}{$$1-\beta=2\Phi(z-z_1-_\alpha)-1 $$}
+$$z=(\delta-|ln(\theta)|\sqrt(nP_AP_BP_E)$$ $~$ , $~$ $$n=\frac{1}{P_AP_BP_E}(\frac{z_1-_\alpha+z_1-_\frac{\beta}{2}}{\delta-|ln(\theta)|})^2$$
 
-$\beta$ is our measure of power. $0<\beta<1$
+$1-\beta$ is our measure of power. $0<\beta<1$
 
-$\Phi$ is the CDF of the normal distribution, $\Phi^{-1}$ is the inverse.
+$\Phi$ is the standard Normal distribution function.
 
-$\mu_t$is the avarage outcome in the treatment group. Suppose it's 65
+$\delta$ is the testing margin.
 
-$\mu_c$ is the avarge outcome in the control group. Suppose it's 60
+$\theta$ is the hazard ration
 
-$\sigma$ is the standard deviation of outcomes.
+$ln(\theta)$ is the natural logarithm of the hazard ratio, or the log-hazard ratio
 
-$\alpha$ is our significance level
+$n$ is sample size.
+
+$P_E$ is the overall probability of the event occurring within the study period
+
+$P_A$ and $P_B$ are the proportions of the sample size allotted to the two groups, named 'A' and 'B'. \textcolor{blue}{Notice that $P_B=1-P_A$}.
 
 
-## The assumption of power analysis is, involves random sampling.  This means that the sample on which power analysis is being conducted is drawn by the process of random sampling.
+
+## The assumption of power analysis is that sample random.
+A simple random sample is a subset of a statistical population in which each member of the subset has an equal probability of being chosen. A simple random sample is meant to be an unbiased representation of a group.A simple random sample is a subset of a population in which each member of the subset has an equal probability of being chosen. A simple random sample is meant to be an unbiased representation of a group.
 
 
 
@@ -69,10 +87,20 @@ There are three ingredients of that.
 
 \textcolor{red}{Third}, experimental Design. Traditional power analysis focuses on one element of experimental design: the number of subjects in each experimental group.
 
+The three ingredients of power connect to the survival analysis model by. Strength of the treatment, how much does the treatment effect how people behave. Backround noise, explaining by example.If we test the drugs there are many diseases kill people then if hard to see when drugs effect. For experimental design, how well the experimental setup or determined and how well good result.
 $~$
 
 (4)\textcolor{blue}{Power analysis for survival analysis}
+
+\textcolor{green}{Survival analysis:}
+The survival probability is the probability that an individual survives from the time origin to a specified future time t and is denoted by $S(t)$. Also, called the survivor function.
+
+\textcolor{green}{Hazard Function:}
+Hazard Function is another idea in survival analysis. Also, called instantaneous death rate. It is usually denoted by $h(t)$ ot $\lambda(t)$ and is the probability that an individual who is under observation at a time t has an event at that time. In another word, it represents the instantaneous event rate for an individual who has already survived to time t.
+
 In survival analysis, the power is directly related to the number of events observed in the study. The required sample size is therefore determined by the observed number of events. Survival data are commonly analyzed using the log-rank test or the Cox proportional hazards model. 
+
+Time to death is the event of interest
 
 $~$
 $~$
@@ -83,6 +111,10 @@ $H_0:HR=1$
 
 where $HR=\frac{h_0(t)}{h_1(t)}$  for all t
 assuming proportional hazards
+
+#Alternative hypothesis
+
+$H_0:HR\neq1$
 
 #Test Statistic
 
@@ -119,41 +151,253 @@ where $z_\frac{\alpha}{2}$ and $z_\beta$ are dtandard normal percentiles, $\pi_1
 (for equal allocation $\pi_1$ and $\pi_2$=1/2)
 
 #Probability of an Event
-\textcolor{red}{$$p{event}=1-(\pi_1s_1(T)+\pi_2s_2(T)$$}
+\textcolor{red}{$$p(event)=1-(\pi_1s_1(T)+\pi_2s_2(T)$$}
 
+where $S_1(t)$ and $S_2(t)$ are Survival function of groups 1 and 2
+
+
+# Find the best model for AIS data
+There are many way to find the best model for the data. We can find the best model by using cox and adding all explanatory variables. Then we see which variables are significant and which aren't. 
+
+# Full Model
+```{r}
+cop1<-coxph(Surv(time_d,censor_d==1)~cd4+tx+strat2+sex+raceth+ivdrug+hemophil+karnof+priorzdv+age,data=AIDSdata)
+cop1
+```
+For the first output, it seems the varabile (ivdrug) is not significant. We will do a likelihood ratio test to confirm after we take out this variable.
+
+```{r}
+cop2<-coxph(Surv(time_d,censor_d==1)~cd4+tx+strat2+sex+raceth+hemophil+karnof+priorzdv+age,data=AIDSdata)
+cop2
+```
+
+
+```{r}
+cop=2*(cop1$loglik[2]-cop2$loglik[2])
+cop
+1-pchisq(cop,1)
+```
+Since the Chi-square test is not significant with one degree of freedom, we do not reject the null hypothesis. Therefore, we feel
+comfortable removing (ivdrug) variable from the model. Now, We continue testing nested models:
+
+Because the variable (priorzdv) has the biggest p-value and is not significant. We will take out and see what will be the model?
+```{r}
+cop3<-coxph(Surv(time_d,censor_d==1)~cd4+tx+strat2+sex+raceth+hemophil+karnof+age,data=AIDSdata)
+cop3
+```
+```{r}
+cop=2*(cop2$loglik[2]-cop3$loglik[2])
+cop
+1-pchisq(cop,1)
+```
+What we did for removing the variable (priorzdv) confirm becouse chi-square test is not significant.
+
+For next step, we keep removing the highest p-value until we get the best model. And here, we can see from the above output the variable (Strat2) will remove it.
+```{r}
+cop4<-coxph(Surv(time_d,censor_d==1)~cd4+tx+sex+raceth+hemophil+karnof+age,data=AIDSdata)
+cop4
+```
+
+
+```{r}
+copp=2*(cop3$loglik[2]-cop4$loglik[2])
+copp
+1-pchisq(copp,1)
+```
+Every time we do chi-square to confirm that what variable take out the is right decision.
+
+The variable (hemophil) has the biggest p-value and is not significant. We will remove it in the next step.
+```{r}
+cop5<-coxph(Surv(time_d,censor_d==1)~cd4+tx+sex+raceth+karnof+age,data=AIDSdata)
+cop5
+```
+
+
+```{r}
+coppp=2*(cop4$loglik[2]-cop5$loglik[2])
+coppp
+1-pchisq(coppp,1)
+```
+
+```{r}
+cop6<-coxph(Surv(time_d,censor_d==1)~cd4+tx+sex+karnof+age,data=AIDSdata)
+cop6
+```
+
+```{r}
+coppp1=2*(cop5$loglik[2]-cop6$loglik[2])
+coppp1
+1-pchisq(coppp1,1)
+```
+
+
+```{r}
+cop7<-coxph(Surv(time_d,censor_d==1)~cd4+tx+karnof+age,data=AIDSdata)
+cop7
+```
+Now, we get the best model. Because all the variables in the model have p-value < 0.05 are significant except the variable tx (treatment) is not significant. However, we can not able to remove it because this is the variable we interesting for the study.
 
 
 ## simulation
 
-First: we have to select subset from our data. The subset has to be significant to get the meaning of power analysis \textcolor{red}{(reject $H_0$ when shouldn't)}
-
-we need to choose 80% from 851. That is equal 681 
 
 ```{r}
-library(data.table)
-AIDSdata_1<-data.table(AIDSdata)
-y=AIDSdata_1[sample(.N,681)]
-```
+simdata <- sim.survdata(N=1000, T=100, num.data.frames=1,beta=c(0.01,0.05,0.08))
+head(simdata$data,10)
+simdata$betas
+head(simdata$baseline,10)
 
-we keep to that untill we get what we looking for. Then we do the Cox Test.
+library(dplyr)
+library(broom)
+```
+Here, we simulated data to compare it with AISD data under the particular hypothese of $H_0:\beta=0$.
+$H_0:h_1(t)=h_2(t)$
+By using same sample size in AISD data (N=851) and use all the value of $\beta$ we got from the best model.
+Since the censor in the AISD data is not equal 0.1. we have to first know how much by using the code below
 
 ```{r}
-coxph(Surv(tx,censor==1)~cd4,data=y)
-
+table(AIDSdata$censor_d)
 ```
-
-Since p-value < 0.05 is significant. Reject $H_0$ and accept $H_1: HR\neq1$
-
-That mean the both groups (treatment and control) are not experiencing an equal number of events at any point in time.
-
-Now, we will do power analysis to do not reject $H_0:HR=1$
+Note that 831/851=0.9764982. Now we have censor=0.976, it shows that the power will be small.
+Also, we need to find the mean and standard deviations for all 4 variables we selected.
 
 ```{r}
-power.cox(681,0.05,0,1)
+m<-c(mean(AIDSdata$cd4),mean(AIDSdata$tx),mean(AIDSdata$karnof),mean(AIDSdata$age))
+m
+s<-c(sd(AIDSdata$cd4),sd(AIDSdata$tx),sd(AIDSdata$karnof),sd(AIDSdata$age))
+s
+set.seed(1234)
+n.reps<-100
+a<-c()
+for(i in 1:n.reps){
+  simdata<-sim.survdata(N=851,T=362,num.data.frames=1,xvars=4,beta=c(-0.016659,-0.867409,-0.071620,0.073674),censor = 0.9764982,mu=m,sd=s)
+model<-coxph(Surv(y,failed)~X1+X2+X3+X4,data=simdata$data)
+a<-rbind(a,cbind(rep=rep(i,4),model %>% tidy()))
+}
+a
+str(simdata$data)
 ```
 
-#
-#
+
+```{r}
+x1pvalue<-a%>% filter(term=="X1") %>%
+  summarize(sum(p.value<0.05))
+x2pvalue<-a%>% filter(term=="X2") %>%
+  summarize(sum(p.value<0.05))
+x3pvalue<-a%>% filter(term=="X3") %>%
+  summarize(sum(p.value<0.05))
+x4pvalue<-a%>% filter(term=="X4") %>%
+  summarize(sum(p.value<0.05))
+c(x1pvalue,x2pvalue,x3pvalue,x4pvalue)
+```
+Now we have three samples size
+
+$H_0:\beta_1=0$
+
+$H_0:\beta_2=0$
+
+$H_0:\beta_3=0$
+
+All the null hypothese should be fales and all the alternative hypothesis is true 
+$H_a:\beta_1\neq0$
+
+$H_a:\beta_2\neq 0$
+
+$H_a:\beta_3\neq0$
+
+The proportion of the first sample size(cd4 variable) is 0.03, the power will be very small here. The proportion of (tx variable) is 0.49 ~ 0.5 and the power will be good in this part.
+
+
+```{r}
+a%>% filter(term=="X4") %>% select(estimate)%>%
+  hist()
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+X1<-a%>% filter(term=="X1")
+X11<-X1$p.value
+X2<-a%>%filter(term=="X2")
+X22<-X2$p.value
+powerEpi(X1=X11,X2=X22,failureFlag = 1,n=51,theta=2,alpha=0.05)
+```
+
+
+
+
+
+
+
+
+```{r}
+ggsurvplot(survfit(Surv(time_d, censor_d)~1, data=AIDSdata))
+
+
+Aid <- survfit(Surv(time_d,censor_d) ~ tx + age , data=AIDSdata)
+ggsurvplot(Aid) + ggtitle("survival function")
+
+
+
+
+
+plot.haz <- function(KM.obj,plot="TRUE") {
+ti <- summary(KM.obj)$time
+di <- summary(KM.obj)$n.event
+ni <- summary(KM.obj)$n.risk
+#Est Hazard Function
+est.haz <- 1:(length(ti))
+for (i in 1:(length(ti)-1))
+est.haz[i] <- di[i]/(ni[i]*(ti[i+1]-ti[i]))
+est.haz[length(ti)] <- est.haz[length(ti)-1]
+if (plot=="TRUE") {
+plot(ti,est.haz,type="s",xlab="Time", ylab="Hazard Rate",
+main=expression(paste(hat(h),(t)[KM])))
+}
+#return(list(est.haz=est.haz,time=ti))
+}
+
+KM.obj <- survfit(Surv(time_d,censor_d)~1,data=AIDSdata,conf.type="plain")
+plot.haz(KM.obj)
+
+ggsurvplot(survfit(Surv(time_d,censor_d) ~ 1, data=AIDSdata),
+censor=F, conf.int=F, fun="cumhaz") + ggtitle("Cumlative Hazard Function")
+
+```
+The hazard of deying in increasing by the time
+
+
+
+
+
+
+```{r}
+ temp <- sim.survdata(N=851,num.data.frames=1,xvars=4,beta=c(-0.016659,-0.867409,-0.071620,0.073674),censor = 0.9764982,mu=m,sd=s)
+str(temp$data)
+hist(temp$data$X3)
+m
+```
+
+
+```{r}
+library(ggplot)
+
+ggplot(shuttle, aes(x=temp, y=launch)) +
+geom_point() +
+geom_smooth(method="lm", se=FALSE)
+
+```
+
+
+
+
 #
 #
 #
@@ -165,5 +409,5 @@ power.cox(681,0.05,0,1)
 References:
 
 http://egap.org/methods-guides/10-things-you-need-know-about-statistical-power
+https://www.investopedia.com/terms/s/simple-random-sample.asp
 Yulia Marchenko, 2007. "Power analysis and sample-size determination in survival models with the new stpower command
-

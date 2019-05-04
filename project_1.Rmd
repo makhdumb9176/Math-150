@@ -9,11 +9,20 @@ output:
 
 
 ```{r warnings=FALSE, message = FALSE}
+library(readr)
+AIDSdata <- read_csv("~/Math-150/AIDSdata.csv")
 library(tidyverse)
 library(broom)
 library(dplyr)
+library(survival)
+library(simsurv)
+library(survminer)
+library(FDRsampsize)
+library(powerSurvEpi)
+library(coxed)
+```
 
-AIDSdata <- read_csv("AIDSdata.csv")
+```{r}
 dim(AIDSdata)
 ```
 
@@ -80,3 +89,15 @@ barplot(counts, xlim=c(0,2), ylim = c(0,850),main="Hemophiliac")
 ```
 
 Summarise the information in the graph by showing the number of said No they do not have Hemophiliac greater than to whom said yes they have it.
+
+
+
+
+
+
+
+
+
+
+
+
